@@ -1,0 +1,549 @@
+\chapter{Métodos heurísticos de optimización}
+
+\section{Introducción}
+
+\subsection{Optimización y la necesidad de métodos sin derivadas}
+
+La optimización es el proceso fundamental de encontrar la mejor solución posible para un problema dado, lo que implica maximizar o minimizar una función objetivo mediante el ajuste de un conjunto de variables o parámetros de entrada. Los métodos clásicos de optimización, como el descenso de gradiente y los métodos cuasi-Newton, han sido herramientas poderosas en este campo, pero dependen crucialmente de la disponibilidad y el cálculo de las derivadas (gradientes) de la función objetivo. Sin embargo, en una multitud de problemas del mundo real, esta información del gradiente no está disponible, es computacionalmente prohibitiva de obtener, o la función objetivo misma no es diferenciable. Esta limitación se manifiesta prominentemente en escenarios donde la función objetivo se evalúa a través de simulaciones computacionales complejas, donde la función puede comportarse como una “caja negra” (black box), o donde la función presenta discontinuidades, ruido o es multimodal. La optimización basada en simulación, en particular, a menudo produce funciones de costo que son aproximaciones numéricas discontinuas de una función subyacente potencialmente suave, lo que puede hacer que los algoritmos basados en gradientes fallen lejos de un mínimo. En tales casos, se requiere una clase diferente de algoritmos: los métodos de optimización sin derivadas.
+
+\subsection{Una visión general}
+
+En este apéndice, se mostrarán tres métodos de optimización sin derivadas, cada uno representando un enfoque distinto para navegar por el espacio de búsqueda sin depender de la información del gradiente.
+\begin{itemize}
+    \item Algoritmo de Hooke-Jeeves (HJ): Un método clásico de búsqueda directa o búsqueda por patrones (pattern search), desarrollado en los albores de la optimización computacional. Funciona explorando sistemáticamente el vecindario de una solución actual y extrapolando en direcciones prometedoras.
+    \item Algoritmos Genéticos (GA): Un algoritmo evolutivo heurístico inspirado en los principios de la selección natural y la genética. Opera sobre una población de soluciones candidatas, aplicando operadores genéticos como la selección, el cruce y la mutación para evolucionar hacia mejores soluciones a lo largo de generaciones.
+    \item Optimización por Enjambre de Partículas (PSO): Un algoritmo heurístico de inteligencia de enjambre inspirado en el comportamiento social de organismos como bandadas de pájaros o bancos de peces. Utiliza una población de partículas que ajustan sus trayectorias basándose en su propia mejor experiencia y la mejor experiencia del enjambre.
+\end{itemize}
+
+\section{El Algoritmo de Hooke-Jeeves}
+
+El algoritmo de Hooke-Jeeves (HJ), desarrollado por Robert Hooke y T. A. Jeeves en 1961, es un método pionero de búsqueda directa, también conocido como búsqueda por patrones. Pertenece a una clase de métodos de optimización que dependen únicamente de la evaluación de la función objetivo, sin requerir ni intentar calcular sus derivadas. La idea central es realizar un examen secuencial de soluciones de prueba, comparando cada una con la mejor solución encontrada hasta el momento y utilizando una estrategia basada en resultados anteriores para determinar la siguiente solución a probar. El algoritmo opera principalmente a través de dos tipos de movimientos: movimientos exploratorios y movimientos de patrón. El procedimiento del algoritmo HJ se puede describir de la siguiente manera:
+\begin{enumerate}
+    \item \TituloBox{Inicialización:} Se comienza con un punto base $x_{\text{base}}$ en el espacio de búsqueda y se define un tamaño de paso inicial $\alpha$.
+    \item \TituloBox{Movimientos exploratorios:} Se evalúa la función objetivo probando $x_{\text{base}} + \alpha e_i$ y $x_{\text{base}} - \alpha e_i$ para cada dimensión $i$, donde $e_i$ es el vector unitario. Si una de estas evaluaciones mejora el valor de la función objetivo, actualiza la coordenada correspondiente.
+    \item \TituloBox{Movimientos de patrón:} Si el movimiento exploratorio fue exitoso, extrapola un nuevo punto
+    $$x_p = x_{\text{new}} + \left(x_{\text{new}} - x_{\text{base}}^{\text{prev}}\right).$$
+    Se realiza una evaluación exploratoria en el punto $x_p$ para encontrar $x_{pp}$. Si $f(x_{pp}) < f(x_{\text{new}})$, se acepta $x_{pp}$ como el nuevo punto base.
+    \item \TituloBox{Reducción del tamaño de paso:} Si el movimiento exploratorio no encontró mejora, reduce el tamaño de paso $\alpha$ multiplicándolo por un factor $\rho$.
+    \item \TituloBox{Terminación:} El algoritmo termina si el tamaño de paso $\alpha$ es menor que una tolerancia predefinida $\varepsilon$ o después de un número máximo de iteraciones.
+\end{enumerate}
+
+\newpage
+En pseudocódigo, tenemos que:
+\begin{algorithm}[h!]
+\SetKwInOut{Entrada}{Entrada}
+\SetKwInOut{Salida}{Salida}
+\SetKwProg{Fn}{Función}{}{}
+
+\Entrada{
+    $x_0$: punto base inicial (vector $n$-dimensional); $\alpha$: tamaño de paso inicial; \\
+    $\rho$: factor de reducción de paso ($0 < \rho < 1$); $\varepsilon$: tolerancia; $f$: función objetivo a minimizar
+}
+
+\BlankLine
+
+\Salida{Mejor solución encontrada $x_{\text{mejor}}$}
+
+$x_{\text{base}} \gets x_0$ \\
+$x_{\text{prev}} \gets x_0$ \\
+$\text{éxito} \gets \text{false}$
+
+\While{$\alpha > \varepsilon$}{
+    \tcp{Movimiento exploratorio}
+    $x_{\text{new}} \gets x_{\text{base}}$ \\
+    \For{$i \gets 1$ \KwTo $n$}{
+        \tcp{Probar dirección positiva}
+        $x_{\text{prueba}} \gets x_{\text{new}} + \alpha \cdot e_i$ \\
+        \If{$f(x_{\text{prueba}}) < f(x_{\text{new}})$}{
+            $x_{\text{new}} \gets x_{\text{prueba}}$
+        }
+        \tcp{Probar dirección negativa}
+        $x_{\text{prueba}} \gets x_{\text{new}} - \alpha \cdot e_i$ \\
+        \If{$f(x_{\text{prueba}}) < f(x_{\text{new}})$}{
+            $x_{\text{new}} \gets x_{\text{prueba}}$
+        }
+    }
+    
+    \BlankLine
+    \uIf{$f(x_{\text{new}}) < f(x_{\text{base}})$}{
+        \tcp{Éxito en exploración: realizar movimiento de patrón}
+        $x_p \gets x_{\text{new}} + (x_{\text{new}} - x_{\text{prev}})$ \\
+        $x_{\text{prev}} \gets x_{\text{base}}$ \\
+        $x_{\text{base}} \gets x_{\text{new}}$ \\
+        
+        \tcp{Explorar alrededor del punto de patrón}
+        $x_{\text{pp}} \gets \text{Explorar}(x_p, \alpha)$ \\
+        \If{$f(x_{\text{pp}}) < f(x_{\text{base}})$}{
+            $x_{\text{base}} \gets x_{\text{pp}}$
+        }
+        $\text{éxito} \gets \text{true}$\;
+    }
+    \Else{
+        \tcp{Reducir tamaño de paso si no hay mejora}
+        \If{$\text{éxito} = \text{false}$}{
+            $\alpha \gets \rho \cdot \alpha$
+        }
+        $x_{\text{prev}} \gets x_{\text{base}}$ \\
+        $\text{éxito} \gets \text{false}$
+    }
+}
+\Return $x_{\text{base}}$
+\end{algorithm}
+
+\section{Algoritmos genéticos}
+
+Los Algoritmos Genéticos (GA) son una clase de algoritmos de búsqueda heurística inspirados en la teoría de la evolución natural de Charles Darwin y los principios de la genética. Introducidos formalmente por John Holland, los GA operan sobre una población de soluciones candidatas, aplicando principios como la “supervivencia del más apto”, la reproducción y la variación aleatoria para evolucionar iterativamente hacia soluciones óptimas o casi óptimas. Los GA pertenecen a la familia más amplia de la Computación Evolutiva o Algoritmos Evolutivos. Un GA típico sigue un proceso iterativo (generacional):
+\newpage
+\begin{enumerate}
+    \item \TituloBox{Inicialización:} Se genera aleatoriamente una población inicial de individuos (soluciones candidatas).
+    \item \TituloBox{Evaluación:} Se calcula la aptitud de cada individuo usando la función de aptitud.
+    \item \TituloBox{Selección:} Se selecciona a los padres para la reproducción según su aptitud, usando métodos como la selección por rueda de ruleta o torneo.
+    \item \TituloBox{Cruce:} Se realiza el cruce de los padres seleccionados para generar descendencia. Los operadores comunes de cruce incluyen el cruce de un solo punto, de múltiples puntos o cruzamiento uniforme.
+    \item \TituloBox{Mutación:} Se aplican mutaciones aleatorias a los individuos con una probabilidad baja.
+    \item \TituloBox{Reemplazo:} La nueva descendencia reemplaza a la población anterior. Se puede usar elitismo para preservar a los mejores individuos
+    \item \TituloBox{Repetición/Terminación:} Los pasos de evaluación, selección, cruce, mutación y reemplazo se repiten hasta alcanzar un número máximo de generaciones o una mejora satisfactoria.
+\end{enumerate}
+En pseudocódigo, tenemos que:
+\begin{algorithm}[h!]
+\SetKwInOut{Entrada}{Entrada}
+\SetKwInOut{Salida}{Salida}
+\SetKwProg{Fn}{Función}{}{}
+
+\Entrada{
+    $P_{\text{size}}$: tamaño de la población; $G_{\text{max}}$: número máximo de generaciones; \\
+    $p_c$: probabilidad de cruce; $p_m$: probabilidad de mutación; $f$: función a maximizar
+}
+
+\BlankLine
+
+\Salida{Mejor individuo encontrado $best$}
+
+$P \gets \text{GenerarPoblaciónInicial}(P_{\text{size}})$
+
+\For{$g \gets 1$ \KwTo $G_{\text{max}}$}{
+    \ForEach{$ind \in P$}{
+        $ind.fitness \gets f(ind)$ \\
+        \If{$best = \text{null}$ \textbf{or} $ind.fitness > best.fitness$}{
+            $best \gets ind$
+        }
+    }
+    $P_{\text{new}} \gets \emptyset$ \\
+    $P_{\text{new}} \gets P_{\text{new}} \cup \text{MejoresIndividuos}(P, k)$
+    \While{$|P_{\text{new}}| < P_{\text{size}}$}{
+        $padre1 \gets \text{Seleccionar}(P)$ \\
+        $padre2 \gets \text{Seleccionar}(P)$
+        
+        \uIf{$\text{Random}() < p_c$}{
+            $[hijo1, hijo2] \gets \text{Cruzar}(padre1, padre2)$
+        }
+        \Else{
+            $hijo1 \gets \text{Copiar}(padre1)$ \\
+            $hijo2 \gets \text{Copiar}(padre2)$
+        }
+        
+        \BlankLine
+        
+        \If{$\text{Random}() < p_m$}{
+            $hijo1 \gets \text{Mutar}(hijo1)$
+        }
+        \If{$\text{Random}() < p_m$}{
+            $hijo2 \gets \text{Mutar}(hijo2)$
+        }
+        
+        $P_{\text{new}} \gets P_{\text{new}} \cup \{hijo1, hijo2\}$
+    }
+    $P \gets P_{\text{new}}$
+}
+\Return $best$
+\end{algorithm}
+
+\newpage
+
+\section{Optimización por enjambre de partículas}
+
+La Optimización por Enjambre de Partículas (PSO, por sus siglas en inglés: Particle Swarm Optimization) es una técnica de optimización estocástica basada en poblaciones, inspirada en el comportamiento social colectivo observado en la naturaleza, como las bandadas de pájaros buscando comida o los bancos de peces. Desarrollado por James Kennedy y Russell Eberhart en 1995, el algoritmo simula a una población (enjambre) de soluciones candidatas (partículas) que “vuelan” a través del espacio de búsqueda multidimensional. Cada partícula ajusta su trayectoria basándose en su propia mejor experiencia pasada y en la mejor experiencia encontrada por el enjambre en su conjunto, con el objetivo de converger hacia la mejor solución posible. El algoritmo PSO opera iterativamente de la siguiente manera:
+\begin{enumerate}
+    \item \TituloBox{Inicialización:} Se genera un enjambre de $N$ partículas. Sus posiciones iniciales $\mathbf{x}_i(0)$ se distribuyen aleatoriamente dentro de los límites del espacio de búsqueda. Se evalúa la aptitud inicial de cada partícula, $f\big(\mathbf{x}_i(0)\big)$, y establece la mejor posición personal inicial, $\mathbf{p}_i(0)$, para cada partícula. Se establece la mejor posición global inicial, $\mathbf{g}(0)$, como la mejor posición personal de todas las partículas.
+    \item \TituloBox{Bucle de iteración:} Para cada partícula $i$, realiza los siguientes pasos:
+    \begin{itemize}
+        \item Actualización de velocidad: Calcula la nueva velocidad $\mathbf{v}_i(t+1)$ usando la fórmula:
+        $$\mathbf{v}_{i,d}(t+1) = w \mathbf{v}_{i,d}(t) + c_1 r_1 \big(\mathbf{p}_{i,d}(t) - \mathbf{x}_{i,d}(t)\big) + c_2 r_2 \big(\mathbf{g}_d(t) - \mathbf{x}_{i,d}(t)\big)$$
+        donde los parámetros son $w$, $c_1$, $c_2$, $r_1$ y $r_2$\footnote{El comportamiento de convergencia es sensible a la elección de los parámetros $w$, $c_1$, $c_2$.}. Cada parámetro es importante: $w$ es el peso de inercia, que controla la influencia de la velocidad anterior y modula el equilibrio entre exploración global y explotación local; $c_1$ es el coeficiente cognitivo (parámetro de confianza personal), que pondera la atracción hacia la mejor posición personal de la partícula; $c_2$ es el coeficiente social (parámetro de confianza en el enjambre), que pondera la atracción hacia la mejor posición global del enjambre; $r_1$ y $r_2$ son números aleatorios generados independientemente (generalmente uniformes entre 0 y 1) que introducen estocasticidad en los componentes cognitivo y social.
+        \item Actualización de posición: Calcula la nueva posición de la partícula:
+        $$\mathbf{x}_i(t+1) = \mathbf{x}_i(t) + \mathbf{v}_i(t+1)$$
+        \item Evaluación: Evalúa la aptitud de la partícula en su nueva posición.
+        \item Actualización de pbest: Si la nueva posición es mejor que la mejor posición personal de la partícula, actualiza $p_{\text{best}}$.
+        \item Actualización de gbest: Después de actualizar todos los $p_{\text{best}}$, se actualiza $g_{\text{best}}$ con la mejor posición personal encontrada en todo el enjambre.
+    \end{itemize}
+    \item \TituloBox{Terminación:} El bucle continúa hasta que se alcanza un criterio de parada, como un número máximo de iteraciones o que la mejora en $g_{\text{best}}$ se estanque.
+\end{enumerate}
+\newpage\noindent
+En pseudocódigo, tenemos que:
+\begin{algorithm}[h!]
+\SetKwInOut{Entrada}{Entrada}
+\SetKwInOut{Salida}{Salida}
+\SetKwProg{Fn}{Función}{}{}
+
+\Entrada{
+    $S$: tamaño del enjambre; $I_{\text{max}}$: número máximo de iteraciones; $w$: peso de inercia; \\
+    $c_1, c_2$: coeficientes cognitivo y social; $f$: función objetivo a minimizar; \\
+    $x_{\text{min}}, x_{\text{max}}$: límites del espacio de búsqueda
+}
+
+\BlankLine
+
+\Salida{Mejor posición global encontrada $gbest$}
+
+\BlankLine
+
+\ForEach{$i \gets 1$ \KwTo $S$}{
+    $partícula_i.x \gets \text{Aleatorio}(x_{\text{min}}, x_{\text{max}})$ \\
+    $partícula_i.v \gets 0$ \\
+    $partícula_i.pbest \gets partícula_i.x$ \\
+    $partícula_i.fitness \gets f(partícula_i.x)$ \\
+    $partícula_i.pbest\_fitness \gets partícula_i.fitness$
+}
+
+$gbest \gets \text{MejorPartícula}(enjambre).x$ \\
+$gbest\_fitness \gets f(gbest)$
+
+\BlankLine
+
+\For{$iter \gets 1$ \KwTo $I_{\text{max}}$}{
+    \ForEach{$partícula_i \in enjambre$}{
+        \For{$d \gets 1$ \KwTo $n$}{
+            $r_1, r_2 \gets \text{Aleatorio}(0,1)$ \\
+            $v_{id} \gets w \cdot v_{id} + c_1 \cdot r_1 \cdot (pbest_{id} - x_{id}) + c_2 \cdot r_2 \cdot (gbest_d - x_{id})$
+        }
+        
+        $partícula_i.x \gets partícula_i.x + partícula_i.v$ \\
+        $partícula_i.x \gets \text{FijarLímites}(partícula_i.x, x_{\text{min}}, x_{\text{max}})$ \\
+        $partícula_i.fitness \gets f(partícula_i.x)$ \\
+        \If{$partícula_i.fitness < partícula_i.pbest\_fitness$}{
+            $partícula_i.pbest \gets partícula_i.x$ \\
+            $partícula_i.pbest\_fitness \gets partícula_i.fitness$
+        }
+        \If{$partícula_i.pbest\_fitness < gbest\_fitness$}{
+            $gbest \gets partícula_i.pbest$ \\
+            $gbest\_fitness \gets partícula_i.pbest\_fitness$
+        }
+    }
+}
+\Return $gbest$
+\end{algorithm}
+
+\section{Implementación en MATLAB}
+
+A continuación, presentamos la implementación de los algoritmos descritos anteriormente en MATLAB. Se hará uso de la técnica de \emph{multistart}. Este generará 2500 puntos uniformemente distribuidos en $\mathbf{x}_i \in [a, b]$. Cada programa tomará cada uno de estos puntos como punto inicial. El programa nos regresará: el número de iteraciones, el mejor punto óptimo encontrado, la función evaluada en ese punto óptimo encontrado y el error que existe entre el punto óptimo encontrado y el verdadero punto óptimo (que se nos proporciona en \cite{sfuoptimization}).
+\begin{matlab}
+% Parámetros comunes
+a = -100; b = 100;          % Límites del dominio
+n_points = 2500;            % Número de puntos iniciales
+dim = 2;                    % Dimensión del problema
+true_opt = [0, 0];          % Óptimo verdadero
+
+% Generar 2500 puntos iniciales uniformemente distribuidos
+rng(1); % Fijar semilla para reproducibilidad
+initial_points = a + (b-a)*rand(n_points, dim);
+
+% Definir la función objetivo
+objective_func = @(x) x(1)^2 + 2*x(2)^2 - 0.3*cos(3*pi*x(1)) - 0.4*cos(4*pi*x(2)) + 0.7;
+
+% Llamar a los optimizadores
+[opt_hj, fval_hj, iter_hj, err_hj] = hooke_jeeves_ms(objective_func, initial_points, a, b, true_opt);
+[opt_ga, fval_ga, iter_ga, err_ga] = genetic_algorithm_ms(objective_func, initial_points, a, b, true_opt);
+[opt_pso, fval_pso, iter_pso, err_pso] = pso_ms(objective_func, initial_points, a, b, true_opt);
+
+% Mostrar resultados
+fprintf('Hooke-Jeeves:\n  Punto óptimo: [%.6f, %.6f]\n  Valor función: %.6f\n  Iteraciones: %d\n  Error: %.6f\n\n',...
+        opt_hj(1), opt_hj(2), fval_hj, iter_hj, err_hj);
+fprintf('Algoritmo Genético:\n  Punto óptimo: [%.6f, %.6f]\n  Valor función: %.6f\n  Iteraciones: %d\n  Error: %.6f\n\n',...
+        opt_ga(1), opt_ga(2), fval_ga, iter_ga, err_ga);
+fprintf('PSO:\n  Punto óptimo: [%.6f, %.6f]\n  Valor función: %.6f\n  Iteraciones: %d\n  Error: %.6f\n',...
+        opt_pso(1), opt_pso(2), fval_pso, iter_pso, err_pso);
+
+% Hooke-Jeeves con MultiStart
+function [best_x, best_fval, total_iter, best_err] = hooke_jeeves_ms(f, initial_points, a, b, true_opt)
+    % Parámetros del algoritmo
+    alpha0 = 1.0;       % Tamaño de paso inicial
+    rho = 0.5;          % Factor de reducción de paso
+    epsilon = 1e-6;     % Tolerancia de terminación
+    max_iter = 1000;    % Máximo de iteraciones por ejecución
+    
+    n_points = size(initial_points, 1);
+    best_fval = inf;
+    best_x = [];
+    total_iter = 0;
+    
+    for i = 1:n_points
+        [x_opt, fval, iter] = hooke_jeeves(f, initial_points(i,:), alpha0, rho, epsilon, max_iter, a, b);
+        total_iter = total_iter + iter;
+        
+        if fval < best_fval
+            best_fval = fval;
+            best_x = x_opt;
+        end
+    end
+    
+    best_err = norm(best_x - true_opt);
+end
+
+function [x_opt, fval, iter] = hooke_jeeves(f, x0, alpha, rho, epsilon, max_iter, a, b)
+    x_base = x0;
+    x_prev = x0;
+    success = false;
+    iter = 0;
+    n = length(x0);
+    
+    while alpha > epsilon && iter < max_iter
+        iter = iter + 1;
+        % Movimiento exploratorio
+        x_new = x_base;
+        
+        for i = 1:n
+            % Prueba en dirección positiva
+            x_temp = x_new;
+            x_temp(i) = min(x_temp(i) + alpha, b);
+            if f(x_temp) < f(x_new)
+                x_new = x_temp;
+            else
+                % Prueba en dirección negativa
+                x_temp = x_new;
+                x_temp(i) = max(x_temp(i) - alpha, a);
+                if f(x_temp) < f(x_new)
+                    x_new = x_temp;
+                end
+            end
+        end
+        
+        % Verificar éxito en la exploración
+        if f(x_new) < f(x_base)
+            % Movimiento de patrón
+            x_pattern = 2*x_new - x_prev;
+            % Asegurar que está dentro de los límites
+            x_pattern = max(min(x_pattern, b), a);
+            
+            % Explorar alrededor del punto de patrón
+            x_pp = x_pattern;
+            for i = 1:n
+                % Prueba en dirección positiva
+                x_temp = x_pp;
+                x_temp(i) = min(x_temp(i) + alpha, b);
+                if f(x_temp) < f(x_pp)
+                    x_pp = x_temp;
+                else
+                    % Prueba en dirección negativa
+                    x_temp = x_pp;
+                    x_temp(i) = max(x_temp(i) - alpha, a);
+                    if f(x_temp) < f(x_pp)
+                        x_pp = x_temp;
+                    end
+                end
+            end
+            
+            % Actualizar puntos
+            x_prev = x_base;
+            if f(x_pp) < f(x_new)
+                x_base = x_pp;
+            else
+                x_base = x_new;
+            end
+            success = true;
+        else
+            % Reducir tamaño de paso si no hay mejora
+            if ~success
+                alpha = rho * alpha;
+            end
+            x_prev = x_base;
+            success = false;
+        end
+    end
+    
+    x_opt = x_base;
+    fval = f(x_opt);
+end
+
+% Algoritmo Genético con MultiStart
+function [best_x, best_fval, total_evals, best_err] = genetic_algorithm_ms(f, initial_points, a, b, true_opt)
+    % Parámetros del algoritmo
+    pop_size = size(initial_points, 1);
+    max_gen = 50;           % Máximo de generaciones
+    pc = 0.8;               % Probabilidad de cruce
+    pm = 0.1;               % Probabilidad de mutación
+    elitism = 0.1;          % Porcentaje de elitismo
+    
+    n_elite = round(elitism * pop_size);
+    population = initial_points;
+    fitness = arrayfun(@(idx) f(population(idx,:)), 1:pop_size);
+    [best_fval, best_idx] = min(fitness);
+    best_x = population(best_idx, :);
+    total_evals = pop_size; % Evaluaciones iniciales
+    
+    for gen = 1:max_gen
+        % Selección por torneo binario
+        parents = zeros(pop_size, 2);
+        for i = 1:pop_size
+            candidates = randperm(pop_size, 2);
+            [~, idx] = min(fitness(candidates));
+            parents(i,:) = population(candidates(idx),:);
+        end
+        
+        % Cruzamiento
+        offspring = zeros(pop_size, 2);
+        for i = 1:2:pop_size
+            if rand < pc
+                % Cruzamiento aritmético
+                alpha = rand;
+                offspring(i,:) = alpha*parents(i,:) + (1-alpha)*parents(i+1,:);
+                offspring(i+1,:) = alpha*parents(i+1,:) + (1-alpha)*parents(i,:);
+            else
+                offspring(i,:) = parents(i,:);
+                offspring(i+1,:) = parents(i+1,:);
+            end
+        end
+        
+        % Mutación
+        for i = 1:pop_size
+            if rand < pm
+                % Mutación uniforme
+                gene = randi(2);
+                offspring(i,gene) = a + (b-a)*rand;
+            end
+        end
+        
+        % Evaluar nueva población
+        new_fitness = arrayfun(@(idx) f(offspring(idx,:)), 1:pop_size);
+        total_evals = total_evals + pop_size;
+        
+        % Elitismo: preservar los mejores individuos
+        all_pop = [population; offspring];
+        all_fit = [fitness, new_fitness];
+        [~, idx] = sort(all_fit);
+        population = all_pop(idx(1:pop_size),:);
+        fitness = all_fit(idx(1:pop_size));
+        
+        % Actualizar mejor solución
+        if fitness(1) < best_fval
+            best_fval = fitness(1);
+            best_x = population(1,:);
+        end
+    end
+    
+    best_err = norm(best_x - true_opt);
+end
+
+% PSO con MultiStart
+function [best_x, best_fval, total_iter, best_err] = pso_ms(f, initial_points, a, b, true_opt)
+    % Parámetros del algoritmo
+    swarm_size = size(initial_points, 1);
+    max_iter = 100;       % Máximo de iteraciones
+    w = 0.5;              % Inercia
+    c1 = 2.0;             % Coeficiente cognitivo
+    c2 = 2.0;             % Coeficiente social
+    
+    % Inicialización de partículas
+    particles = struct('position', num2cell(initial_points,2), ...
+                      'velocity', zeros(swarm_size, 2), ...
+                      'best_position', num2cell(initial_points,2), ...
+                      'best_fitness', arrayfun(@(idx) f(initial_points(idx,:)), 1:swarm_size)');
+    
+    [best_fval, best_idx] = min([particles.best_fitness]);
+    best_x = particles(best_idx).best_position;
+    
+    total_iter = 0;
+    for iter = 1:max_iter
+        total_iter = iter;
+        for i = 1:swarm_size
+            % Actualizar velocidad
+            r1 = rand(1,2);
+            r2 = rand(1,2);
+            particles(i).velocity = w * particles(i).velocity + ...
+                c1 * r1 .* (particles(i).best_position - particles(i).position) + ...
+                c2 * r2 .* (best_x - particles(i).position);
+            
+            % Actualizar posición
+            particles(i).position = particles(i).position + particles(i).velocity;
+            
+            % Aplicar límites
+            particles(i).position = max(min(particles(i).position, b), a);
+            
+            % Evaluar fitness
+            current_fitness = f(particles(i).position);
+            
+            % Actualizar mejor personal
+            if current_fitness < particles(i).best_fitness
+                particles(i).best_fitness = current_fitness;
+                particles(i).best_position = particles(i).position;
+                
+                % Actualizar mejor global
+                if current_fitness < best_fval
+                    best_fval = current_fitness;
+                    best_x = particles(i).position;
+                end
+            end
+        end
+    end
+    
+    best_err = norm(best_x - true_opt);
+end
+\end{matlab}
+
+\newpage
+
+\section{Análisis comparativo de HJ, GA y PSO}
+
+La siguiente tabla resume las características clave y los aspectos de rendimiento de los tres algoritmos, basándose en la información recopilada:\renewcommand{\arraystretch}{1.5}
+\begin{table}[h!]
+    \centering
+    \arrayrulecolor{white}  % Color de las líneas
+    \setlength{\arrayrulewidth}{1.25pt}
+    \begin{tabularx}{\textwidth}{X|X|X|X}
+        \rowcolor{cw0!80}
+        \textbf{\color{white}Característica} & \textbf{\color{white}Hooke-Jeeves} & \textbf{\color{white}Algoritmo Genético} & \textbf{\color{white}Optimización por Enjambre de Partículas} \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Tipo de algoritmo} & Búsqueda Directa o por Patrones; Determinista (dada una secuencia de decisiones) & Metaheurística evolutiva; estocástico; basado en población & Metaheurística de inteligencia de enjambre; estocástico; basado en población \\
+        \hline
+        %
+        \rowcolor{cw1!30!white}
+        \textbf{Requisito de derivadas} & No & No & No \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Estrategia de búsqueda} & Local, basada en punto único más sondeos; movimientos exploratorios y de patrón & Global y/o local; evolución de población & Global y/o local; Movimiento de partículas en enjambre \\
+        \hline
+        %
+        \rowcolor{cw1!30!white}
+        \textbf{Mecanismos centrales} & Sondeo por coordenadas, extrapolación de patrón, reducción de tamaño de paso & Selección: supervivencia del más apto), cruce: recombinación), mutación: variación aleatoria & Actualización de velocidad (inercia, pbest, gbest), actualización de posición \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Sesgo exploración y explotación} & Principalmente explotación local; patrón intenta exploración limitada & Fuerte en exploración, explotación a través de selección & Fuerte en explotación, exploración limitada (controlada por inercia y/o parámetros) \\
+        \hline
+        %
+        \rowcolor{cw1!30!white}
+        \textbf{Convergencia} & Convergencia a óptimo local; puede ser rápido en problemas simples/suaves & Convergencia más lenta; mejor capacidad para escapar de óptimos locales & Convergencia rápida; propenso a convergencia prematura a óptimos locales \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Manejo de discontinuidades} & Sensible; rendimiento se degrada con discontinuidades grandes & Robusto; adecuado para funciones discontinuas/ruidosas & Robusto; adecuado para funciones discontinuas/ruidosas \\
+        \hline
+        %
+        \rowcolor{cw1!30!white}
+        \textbf{Dificultad de ajuste de parámetros} & Baja: tamaño de paso, factor de reducción & Moderada: tamaño de población, tasas cruce y mutación, operadores; considerado más robusto que PSO & Alta; muy sensible a parámetros: $w$, $c_1$, $c_2$ \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Costo computacional} & $O(n)$ evaluaciones por exploración; puede ser alto si $n$ es grande & Alto (evaluación de población por generación); paralelizable & Moderado/Alto (evaluación de población) \\
+        \hline
+        %
+        \rowcolor{cw1!30!white}
+        \textbf{Fortaleza clave} & Simplicidad; buena búsqueda local & Robustez; versatilidad; buena exploración global & Rápida convergencia; eficiencia en problemas continuos \\
+        \hline
+        %
+        \rowcolor{cw2!70!white}
+        \textbf{Debilidad clave} & Atrapamiento en óptimos locales; sensible a discontinuidades & Convergencia lenta; costo computacional & Convergencia prematura; ajuste sensible de parámetros
+    \end{tabularx}
+    \caption{Comparación entre los algoritmos Hooke-Jeeves, Algoritmo Genético y Optimización por Enjambre de Partículas}
+\end{table}

@@ -1,0 +1,66 @@
+\renewcommand\listingscaption{Programa}
+
+\RequirePackage{matlab-prettifier}
+
+% código de MATLAB
+\lstdefinestyle{matlabstyle}{
+    style=Matlab-editor,
+    basicstyle=\ttfamily,
+    xleftmargin=35pt, xrightmargin=0pt,
+    frame=leftline, framesep=10pt, framerule=25pt, rulecolor=\color{gray!20},
+    numbers=left, numberstyle=\ttfamily\color{black}, numbersep=15pt,
+    upquote=true, showstringspaces=false, tabsize=4,
+    breaklines=true, breakindent=20pt, breakatwhitespace=true,
+    breakautoindent=true,
+    aboveskip=0.8em, belowskip=0.2em,
+    prebreak={ ...},
+    escapechar=`}
+\lstnewenvironment{matlab}[1][1]{%
+    \lstset{style=matlabstyle, firstnumber=#1}}{}
+\newcommand*{\inputmatlab}[3]{\lstinputlisting[
+    style=matlabstyle, linerange={{#2}-{#3}}, firstnumber=#2]{#1}}
+\newcommand*{\mat}{\lstinline[style=Matlab-editor, basicstyle=\ttfamily]}
+
+
+\newtcolorbox{compilado}{
+    colback=white,
+    colframe=cw0,
+    fontupper=\ttfamily,
+    sharp corners,
+    left=2mm,
+    right=2mm,
+    after skip=6pt,
+}
+
+
+\newcommand{\triangcirc}{\tikz{
+\node[circle,white,draw,inner sep=3pt] (c) {};
+\node[isosceles triangle,
+    white,
+    fill,
+    rotate=-90,
+    anchor=apex,
+    isosceles triangle apex angle=60,
+    inner sep=1.5pt] (t) at ([yshift=0.5pt]c.south) {};
+    }
+}
+
+\mdfdefinestyle{commandline}
+{leftmargin=5pt, rightmargin=10pt,innerleftmargin=15pt,
+ middlelinecolor=cw0,
+ middlelinewidth=2pt,
+ frametitlerule=false,
+ backgroundcolor=white!95!black,
+ frametitle={\hspace{0.5cm}Command Window\vphantom{$_{A_a}$}\hfill\triangcirc},
+ frametitlefont={\bfseries\fontencoding{T1}
+    \fontfamily{phv}\selectfont\color{white}\hspace{-2.25em}},
+ frametitlebackgroundcolor=cw0,
+ singleextra={\draw[white!90!black,line width=12pt] 
+      ($(O)+(7pt,1pt)$) -- ($(O|-P)+(7pt,-\mdfframetitleboxtotalheight)-(0,1pt)$);
+      }
+}
+
+\lstnewenvironment{script} {\lstset{language=Matlab,basicstyle=\ttfamily,breaklines=true,aboveskip=0pt,belowskip=0pt}} {}
+\surroundwithmdframed[style=commandline]{script}
+
+\WarningsOff[caption]

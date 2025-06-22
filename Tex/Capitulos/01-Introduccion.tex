@@ -1,0 +1,11 @@
+\chapter{Introducción}
+
+La optimización no lineal constituye una herramienta fundamental en matemáticas aplicadas, ingeniería e inteligencia artificial, donde la búsqueda de soluciones óptimas permite resolver problemas complejos en campos como economía, diseño de sistemas y aprendizaje automático. Sin embargo, la diversidad de problemas de optimización (desde funciones suaves hasta paisajes multimodales con múltiples óptimos locales) plantea un desafío crítico: \emph{no existe un algoritmo universalmente superior}. La elección del método depende de factores como la naturaleza de la función objetivo, el costo computacional, la disponibilidad de derivadas y la precisión requerida.
+
+\section*{Motivación}
+
+Este proyecto surge de la necesidad de evaluar científicamente el rendimiento de métodos de optimización en escenarios realistas. Muchos estudios comparativos se limitan a pruebas con puntos iniciales únicos, lo que puede sesgar los resultados. Aquí, implementamos una metodología rigurosa mediante \textbf{técnicas de multistart} con 2,500 puntos iniciales distribuidos uniformemente, garantizando robustez estadística y reproducibilidad. Además, seleccionamos siete funciones de prueba (seis multimodales y una cuadrática) que representan desafíos típicos en aplicaciones científicas y técnicas, desde la clásica Booth hasta la compleja Goldstein-Price.
+
+\section*{Contribución}
+
+Este trabajo no solo valida teóricamente los métodos estudiados, sino que ofrece un \emph{análisis práctico} mediante implementaciones en MATLAB, código reproducible y resultados detallados para cada función. Los hallazgos destacan \emph{trade-offs} entre velocidad, precisión y requerimientos computacionales, demostrando, por ejemplo, la eficiencia de Newton en funciones cuadráticas frente a la resiliencia de Hooke-Jeeves en problemas sin derivadas. Esta comparación sistemática sirve como referencia para investigadores e ingenieros que enfrentan problemas de optimización en entornos multidisciplinarios.

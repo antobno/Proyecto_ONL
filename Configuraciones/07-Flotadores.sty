@@ -1,0 +1,43 @@
+\DeclareCaptionFont{myCaptionFont}{\bfseries\fontencoding{T1}\fontfamily{phv}\selectfont\color{cw0}}
+\DeclareCaptionLabelSeparator{myCaptionLabelSeparator}{\hspace*{1.25ex}}
+
+
+\captionsetup{
+    labelfont=myCaptionFont,
+    %justification=raggedright,
+    singlelinecheck=false,
+    labelsep=myCaptionLabelSeparator,
+    strut=yes,%
+    hypcap=true, % Los enlaces apuntan a la parte superior de la figura
+    %singlelinecheck=false,%
+    %width=\marginparwidth,
+    %indention=0pt, % Suprimir la sangría
+    %parindent=0pt, % Suprimir el espacio entre los párrafos
+}
+
+\floatsetup[figure]{
+    floatwidth=\textwidth,
+    font={normalsize},
+    captionskip=0mm,
+    capbesideposition={top,left},
+    capbesidewidth=sidefil,
+    captionskip=8pt,
+}
+
+\floatsetup[table]{
+    floatwidth=\textwidth,
+    font={normalsize},
+    captionskip=0mm,
+    capbesideposition={top,left},
+    capbesidewidth=sidefil,
+    captionskip=8pt,
+}
+
+\floatsetup[lstlisting]{
+    floatwidth=\textwidth,
+    font={normalsize},
+    captionskip=0pt,
+    capbesideposition={top,left},
+    capbesidewidth=sidefil,
+    captionskip=8pt,
+}

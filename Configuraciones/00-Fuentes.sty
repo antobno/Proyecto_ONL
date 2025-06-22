@@ -1,0 +1,46 @@
+%%% Fuentes %%%  
+\usepackage[T1]{fontenc}  % Codificación de fuente para conjuntos de caracteres extendidos.  
+\usepackage{fvextra}  % Personalización mejorada de entornos verbatim.  
+\usepackage{csquotes} % Comillas contextuales.
+\usepackage{fontspec}  % Requerido para fuentes personalizadas con XeLaTeX o LuaLaTeX.  
+\usepackage{unicode-math}
+
+\linespread{1.5}  % Aumentar ligeramente el interlineado.  
+\setmainfont{XITS}
+[    Extension = .otf,
+   UprightFont = *-Regular,
+      BoldFont = *-Bold,
+    ItalicFont = *-Italic,
+BoldItalicFont = *-BoldItalic,
+]
+
+\setmathfont{XITSMath-Regular}
+[    Extension = .otf,
+      BoldFont = XITSMath-Bold,
+]
+
+\newfontfamily\Lato[
+  Ligatures       = TeX,
+  UprightFont     = *-Regular,
+  ItalicFont      = *-Italic,
+  BoldFont        = *-Bold,
+  BoldItalicFont  = *-BoldItalic,
+]{Lato}
+
+% A mi parecer, es mejor estéticamente utilizar lo siguiente:
+\AtBeginDocument{%
+  \mathchardef\stdcomma=\mathcode`,
+  \mathcode`,="8000
+}
+\begingroup\lccode`~=`, \lowercase{\endgroup\def~}{\stdcomma\,}
+
+\setmathfont{Latin Modern Math}[range=\sum]
+\setmathfont{Latin Modern Math}[range=\nabla]
+
+
+\newcommand{\demostracion}{\noindent\textbf{\fontencoding{T1}\fontfamily{phv}\selectfont\color{cw0}Demostración:\hspace{5pt plus 1pt minus 1pt}}}
+
+\newcommand{\solucion}{\noindent\textbf{\fontencoding{T1}\fontfamily{phv}\selectfont\color{cw0}Solución:\hspace{5pt plus 1pt minus 1pt}}}
+
+
+\newcommand{\TituloBox}[1]{\textbf{\color{cw0}\Lato#1}}

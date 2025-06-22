@@ -1,0 +1,233 @@
+\chapter{El Algoritmo de Hooke-Jeeves}
+
+\section{Introducción}
+
+\subsection{Optimización y la necesidad de métodos sin derivadas}
+
+La optimización es el proceso fundamental de encontrar la mejor solución posible para un problema dado, lo que implica maximizar o minimizar una función objetivo mediante el ajuste de un conjunto de variables o parámetros de entrada. Los métodos clásicos de optimización, como el descenso de gradiente y los métodos cuasi-Newton, han sido herramientas poderosas en este campo, pero dependen crucialmente de la disponibilidad y el cálculo de las derivadas (gradientes) de la función objetivo. Sin embargo, en una multitud de problemas del mundo real, esta información del gradiente no está disponible, es computacionalmente prohibitiva de obtener, o la función objetivo misma no es diferenciable. Esta limitación se manifiesta prominentemente en escenarios donde la función objetivo se evalúa a través de simulaciones computacionales complejas, donde la función puede comportarse como una “caja negra” (black box), o donde la función presenta discontinuidades, ruido o es multimodal. La optimización basada en simulación, en particular, a menudo produce funciones de costo que son aproximaciones numéricas discontinuas de una función subyacente potencialmente suave, lo que puede hacer que los algoritmos basados en gradientes fallen lejos de un mínimo. En tales casos, se requiere una clase diferente de algoritmos: los métodos de optimización sin derivadas.
+
+\subsection{Una visión general}
+
+Existen tres métodos de optimización sin derivadas muy populares, cada uno representando un enfoque distinto para navegar por el espacio de búsqueda sin depender de la información del gradiente.
+\begin{itemize}
+    \item Algoritmo de Hooke-Jeeves (HJ): Un método clásico de búsqueda directa o búsqueda por patrones (pattern search), desarrollado en los albores de la optimización computacional. Funciona explorando sistemáticamente el vecindario de una solución actual y extrapolando en direcciones prometedoras.
+    \item Algoritmos Genéticos (GA): Un algoritmo evolutivo heurístico inspirado en los principios de la selección natural y la genética. Opera sobre una población de soluciones candidatas, aplicando operadores genéticos como la selección, el cruce y la mutación para evolucionar hacia mejores soluciones a lo largo de generaciones.
+    \item Optimización por Enjambre de Partículas (PSO): Un algoritmo heurístico de inteligencia de enjambre inspirado en el comportamiento social de organismos como bandadas de pájaros o bancos de peces. Utiliza una población de partículas que ajustan sus trayectorias basándose en su propia mejor experiencia y la mejor experiencia del enjambre.
+\end{itemize}
+En este apéndice explicaremos el Algoritmo de Hooke-Jeeves.
+
+\section{El Algoritmo de Hooke-Jeeves}
+
+El algoritmo de Hooke-Jeeves (HJ), desarrollado por Robert Hooke y T. A. Jeeves en 1961, es un método pionero de búsqueda directa, también conocido como búsqueda por patrones. Pertenece a una clase de métodos de optimización que dependen únicamente de la evaluación de la función objetivo, sin requerir ni intentar calcular sus derivadas. La idea central es realizar un examen secuencial de soluciones de prueba, comparando cada una con la mejor solución encontrada hasta el momento y utilizando una estrategia basada en resultados anteriores para determinar la siguiente solución a probar. El algoritmo opera principalmente a través de dos tipos de movimientos: movimientos exploratorios y movimientos de patrón. El procedimiento del algoritmo HJ se puede describir de la siguiente manera:
+\begin{enumerate}
+    \item \TituloBox{Inicialización:} Se comienza con un punto base $x_{\text{base}}$ en el espacio de búsqueda y se define un tamaño de paso inicial $\alpha$.
+    \item \TituloBox{Movimientos exploratorios:} Se evalúa la función objetivo probando $x_{\text{base}} + \alpha e_i$ y $x_{\text{base}} - \alpha e_i$ para cada dimensión $i$, donde $e_i$ es el vector unitario. Si una de estas evaluaciones mejora el valor de la función objetivo, actualiza la coordenada correspondiente.
+    \item \TituloBox{Movimientos de patrón:} Si el movimiento exploratorio fue exitoso, extrapola un nuevo punto
+    $$x_p = x_{\text{new}} + \left(x_{\text{new}} - x_{\text{base}}^{\text{prev}}\right).$$
+    Se realiza una evaluación exploratoria en el punto $x_p$ para encontrar $x_{pp}$. Si $f(x_{pp}) < f(x_{\text{new}})$, se acepta $x_{pp}$ como el nuevo punto base.
+    \item \TituloBox{Reducción del tamaño de paso:} Si el movimiento exploratorio no encontró mejora, reduce el tamaño de paso $\alpha$ multiplicándolo por un factor $\rho$.
+    \item \TituloBox{Terminación:} El algoritmo termina si el tamaño de paso $\alpha$ es menor que una tolerancia predefinida $\varepsilon$ o después de un número máximo de iteraciones.
+\end{enumerate}
+
+\newpage
+En pseudocódigo, tenemos que:
+\begin{algorithm}[h!]
+\SetKwInOut{Entrada}{Entrada}
+\SetKwInOut{Salida}{Salida}
+\SetKwProg{Fn}{Función}{}{}
+
+\Entrada{
+    $x_0$: punto base inicial (vector $n$-dimensional); $\alpha$: tamaño de paso inicial; \\
+    $\rho$: factor de reducción de paso ($0 < \rho < 1$); $\varepsilon$: tolerancia; $f$: función objetivo a minimizar
+}
+
+\BlankLine
+
+\Salida{Mejor solución encontrada $x_{\text{mejor}}$}
+
+$x_{\text{base}} \gets x_0$ \\
+$x_{\text{prev}} \gets x_0$ \\
+$\text{éxito} \gets \text{false}$
+
+\While{$\alpha > \varepsilon$}{
+    \tcp{Movimiento exploratorio}
+    $x_{\text{new}} \gets x_{\text{base}}$ \\
+    \For{$i \gets 1$ \KwTo $n$}{
+        \tcp{Probar dirección positiva}
+        $x_{\text{prueba}} \gets x_{\text{new}} + \alpha \cdot e_i$ \\
+        \If{$f(x_{\text{prueba}}) < f(x_{\text{new}})$}{
+            $x_{\text{new}} \gets x_{\text{prueba}}$
+        }
+        \tcp{Probar dirección negativa}
+        $x_{\text{prueba}} \gets x_{\text{new}} - \alpha \cdot e_i$ \\
+        \If{$f(x_{\text{prueba}}) < f(x_{\text{new}})$}{
+            $x_{\text{new}} \gets x_{\text{prueba}}$
+        }
+    }
+    
+    \BlankLine
+    \uIf{$f(x_{\text{new}}) < f(x_{\text{base}})$}{
+        \tcp{Éxito en exploración: realizar movimiento de patrón}
+        $x_p \gets x_{\text{new}} + (x_{\text{new}} - x_{\text{prev}})$ \\
+        $x_{\text{prev}} \gets x_{\text{base}}$ \\
+        $x_{\text{base}} \gets x_{\text{new}}$ \\
+        
+        \tcp{Explorar alrededor del punto de patrón}
+        $x_{\text{pp}} \gets \text{Explorar}(x_p, \alpha)$ \\
+        \If{$f(x_{\text{pp}}) < f(x_{\text{base}})$}{
+            $x_{\text{base}} \gets x_{\text{pp}}$
+        }
+        $\text{éxito} \gets \text{true}$\;
+    }
+    \Else{
+        \tcp{Reducir tamaño de paso si no hay mejora}
+        \If{$\text{éxito} = \text{false}$}{
+            $\alpha \gets \rho \cdot \alpha$
+        }
+        $x_{\text{prev}} \gets x_{\text{base}}$ \\
+        $\text{éxito} \gets \text{false}$
+    }
+}
+\Return $x_{\text{base}}$
+\end{algorithm}
+
+\section{Implementación en \textsc{Matlab}}
+
+A continuación, presentamos la implementación del algoritmo Hooke-Jeeves en \textsc{Matlab}. Se hará uso de la técnica \emph{multistart}. Este generará 2500 puntos uniformemente distribuidos en $\mathbf{x}_i \in [a, b]$. Dicho programa tomará cada uno de estos puntos como punto inicial. El programa nos regresará: el número de iteraciones, el mejor punto óptimo encontrado, la función evaluada en ese punto óptimo encontrado y el error que existe entre el punto óptimo encontrado y el verdadero punto óptimo (que se nos proporciona en \cite{sfuoptimization}).
+
+\newpage
+\label{program-JH}
+\begin{matlab}
+% Parámetros comunes
+a = -10; b = 10;            % Límites del dominio
+n_points = 2500;            % Número de puntos iniciales
+dim = 2;                    % Dimensión del problema
+true_opt = [1, 3];          % Óptimo verdadero
+
+% Generar 2500 puntos iniciales uniformemente distribuidos
+rng(1); % Fijar semilla para reproducibilidad
+initial_points = a + (b-a)*rand(n_points, dim);
+
+% Definir la función objetivo
+objective_func = @(x) (x(1) + 2*x(2) - 7)^2 + (2*x(1) + x(2) - 5)^2; % Función de la sección 4.2
+
+% Llamar a los optimizadores
+[opt_hj, fval_hj, iter_hj, err_hj] = hooke_jeeves_ms(objective_func, initial_points, a, b, true_opt);
+
+% Mostrar resultados
+fprintf('Hooke-Jeeves:\n  Punto óptimo: [%.6f, %.6f]\n  Valor función: %.6f\n  Iteraciones: %d\n  Error: %.6f\n\n',...
+        opt_hj(1), opt_hj(2), fval_hj, iter_hj, err_hj);
+
+% Hooke-Jeeves con MultiStart
+function [best_x, best_fval, best_iter, best_err] = hooke_jeeves_ms(f, initial_points, a, b, true_opt)
+    % Parámetros del algoritmo
+    alpha0 = 1.0;       % Tamaño de paso inicial
+    rho = 0.5;          % Factor de reducción de paso
+    epsilon = 1e-6;     % Tolerancia de terminación
+    max_iter = 1000;    % Máximo de iteraciones por ejecución
+    
+    n_points = size(initial_points, 1);
+    best_fval = inf;
+    best_x = [];
+    best_iter = 0;  % Almacena iteraciones de la mejor ejecución
+    
+    for i = 1:n_points
+        [x_opt, fval, iter] = hooke_jeeves(f, initial_points(i,:), alpha0, rho, epsilon, max_iter, a, b);
+        
+        % Guardar iteraciones SOLO si es la mejor ejecución
+        if fval < best_fval
+            best_fval = fval;
+            best_x = x_opt;
+            best_iter = iter;  % Guarda iteraciones de esta ejecución
+        end
+    end
+    
+    best_err = norm(best_x - true_opt);
+end
+
+function [x_opt, fval, iter] = hooke_jeeves(f, x0, alpha, rho, epsilon, max_iter, a, b)
+    x_base = x0;
+    x_prev = x0;
+    success = false;
+    iter = 0;
+    n = length(x0);
+    
+    while alpha > epsilon && iter < max_iter
+        iter = iter + 1;
+        % Movimiento exploratorio
+        x_new = x_base;
+        
+        for i = 1:n
+            % Prueba en dirección positiva
+            x_temp = x_new;
+            x_temp(i) = min(x_temp(i) + alpha, b);
+            if f(x_temp) < f(x_new)
+                x_new = x_temp;
+            else
+                % Prueba en dirección negativa
+                x_temp = x_new;
+                x_temp(i) = max(x_temp(i) - alpha, a);
+                if f(x_temp) < f(x_new)
+                    x_new = x_temp;
+                end
+            end
+        end
+        
+        % Verificar éxito en la exploración
+        if f(x_new) < f(x_base)
+            % Movimiento de patrón
+            x_pattern = 2*x_new - x_prev;
+            % Asegurar que está dentro de los límites
+            x_pattern = max(min(x_pattern, b), a);
+            
+            % Explorar alrededor del punto de patrón
+            x_pp = x_pattern;
+            for i = 1:n
+                % Prueba en dirección positiva
+                x_temp = x_pp;
+                x_temp(i) = min(x_temp(i) + alpha, b);
+                if f(x_temp) < f(x_pp)
+                    x_pp = x_temp;
+                else
+                    % Prueba en dirección negativa
+                    x_temp = x_pp;
+                    x_temp(i) = max(x_temp(i) - alpha, a);
+                    if f(x_temp) < f(x_pp)
+                        x_pp = x_temp;
+                    end
+                end
+            end
+            
+            % Actualizar puntos
+            x_prev = x_base;
+            if f(x_pp) < f(x_new)
+                x_base = x_pp;
+            else
+                x_base = x_new;
+            end
+            success = true;
+        else
+            % Reducir tamaño de paso si no hay mejora
+            if ~success
+                alpha = rho * alpha;
+            end
+            x_prev = x_base;
+            success = false;
+        end
+    end
+    
+    x_opt = x_base;
+    fval = f(x_opt);
+end
+\end{matlab}
+Al compilar, obtenemos la siguente salida
+\begin{script}
+>> HJs
+Hooke-Jeeves:
+  Punto óptimo: [1.000000, 3.000000]
+  Valor función: 0.000000
+  Iteraciones: 47
+  Error: 0.000000
+\end{script}
+
+\newpage

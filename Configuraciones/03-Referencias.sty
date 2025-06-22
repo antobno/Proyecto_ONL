@@ -1,0 +1,76 @@
+%%% Bibliografía %%%  
+\usepackage[
+	backend=biber,  % Usar Biber para la compilación de la bibliografía.  
+	citestyle=authoryear,  % Estilo para las citas en el texto.  
+	bibstyle=authoryear,  % Estilo para la bibliografía.  
+	sorting=nyt,  % Ordenar las referencias por nombre, año y título.  
+    natbib=true,  % Habilitar compatibilidad con natbib.  
+    dashed=false,  % Siempre mostrar los nombres de los autores en la bibliografía.  
+    uniquelist=false  % Mostrar solo al primer autor (por ejemplo, Autor et al., Año).  
+]{biblatex}  
+
+\setlength\bibitemsep{1.5\itemsep}  % Aumentar el espacio entre los elementos de la bibliografía.  
+\setlength\bibhang{0pt}  % Eliminar la sangría en las entradas de la bibliografía.  
+\addbibresource{Bibliografia/Bibliografia.bib}  % Cargar el archivo de bibliografía.  
+
+% Configurar el estilo de citación para incluir autor y año de manera prominente.  
+\ExecuteBibliographyOptions{maxcitenames=1}  
+\DeclareFieldFormat{citehyperref}{%  
+    \DeclareFieldAlias{bibhyperref}{noformat}%  
+    \bibhyperref{#1}%  
+}  
+
+\DeclareFieldFormat{textcitehyperref}{%  
+    \DeclareFieldAlias{bibhyperref}{noformat}%  
+    \bibhyperref{%  
+        #1%  
+        \ifbool{cbx:parens}  
+        {\bibcloseparen\global\boolfalse{cbx:parens}}  
+    {}}%  
+}  
+
+\savebibmacro{cite}  
+\savebibmacro{textcite}  
+\renewbibmacro*{cite}{%  
+    \printtext[citehyperref]{%  
+        \restorebibmacro{cite}%  
+        \usebibmacro{cite}%  
+    }}  
+
+\renewbibmacro*{textcite}{%  
+    \ifboolexpr{  
+        ( not test {\iffieldundef{prenote}} and  
+          test {\ifnumequal{\value{citecount}}{1}} )  
+        or  
+        ( not test {\iffieldundef{postnote}} and  
+          test {\ifnumequal{\value{citecount}}{\value{citetotal}}} )  
+    }  
+    {\DeclareFieldAlias{textcitehyperref}{noformat}}  
+    {}%  
+    \printtext[textcitehyperref]{%  
+    \restorebibmacro{textcite}%  
+    \usebibmacro{textcite}}%  
+}  
+
+% Configuración de hipervínculos.
+\urlstyle{rm}
+\hypersetup{
+    pdfborder={1 1 0},
+	pdfcreator=LuaLaTeX,
+    pdftitle={Proyecto final de Optimización no lineal},
+	pdfauthor={Antonio Mendoza, Sabdi Rivera, Jessica Arcos, Angelica Velazquez},
+    pdfsubject={Este documento proporciona el proyecto final de Optimización no lineal del periodo 25/2},
+    %pdfpagemode=FullScreen,
+    %bookmarks=true,
+    bookmarksopen=false,
+    linktocpage=true,
+	colorlinks=true,
+	linkcolor=black,
+	linktoc=all,
+	urlcolor=black,
+	citecolor=black,
+	filecolor=black,
+}
+
+% Añade un "." después del número en el marcador del PDF.  
+\def\Hy@numberline#1{\ifHy@bookmarksnumbered{#1.\hspace{0.3em}}\else#1\fi}  

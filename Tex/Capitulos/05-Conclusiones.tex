@@ -1,0 +1,13 @@
+\chapter{Conclusiones}
+
+En este proyecto nos permitió poder evaluara los métodos de optimización con alguna característica particular, por ejemplo el Método de Máxima Pendiente el tamaño de paso se cálculo con Armijo, ya que consideramos que era la mejor forma de aproximar por este método, en Cuasi-Newton escogimos por Rango 1, Gradientes Conjugados al calcular el beta se hizo por medio de Fletcher-Reeves, así para el resto de métodos.
+
+Los cinco métodos de optimización (Máxima Pendiente con Armijo, Newton, Cuasi-Newton Rango 1, Gradientes Conjugados y Hooke-Jeeves), que se probaron por medio del lenguaje de programación MATLAB, a las siete funciones las cuales 6 eran multimodales y una cuadrática, nos permitió poder hacer un analices más exacto de que método nos conviene más, aplicando la técnica del multistart que nos daba 2500 puntos aleatorios en un intervalo y cada punto lo toma como el punto inicial al programar y así poder iterar hasta llegar al óptimo.
+
+En general, se observó que el método de Newton fue consistentemente uno de los más eficientes, logrando convergencia en pocas iteraciones y alcanzando con frecuencia el mínimo global, especialmente en funciones suaves y cuadráticas como Booth, Matyas y Beale. No obstante, en funciones más complejas o altamente no lineales (como Easom o Goldstein-Price), este método mostró sensibilidad al cálculo de la Hessiana.
+
+El método Cuasi-Newton Rango 1 demostró ser un método adversario para el Método de Newton, ya que, presenta errores casi nulos o menores a $\times 10^{-9}$ y tener una buena  precisión y número de iteraciones, siendo el más eficiente para la función de Bohachevsky. Por otra parte, Hooke-Jeeves, fue un método preciso, sin embargo, era el  más costoso en términos computacionales, debido a su naturaleza de búsqueda sin derivadas.
+
+El método de Gradientes Conjugados tuvo complicaciones en funciones con múltiples óptimos, acumulando un mayor número de iteraciones y errores significativos en varios casos, como en las funciones de Easom y Matyas. En contraste, el método de Máxima Pendiente con Armijo fue más robusto, pero también más costoso en iteraciones, destacando cuando la función favorece el descenso más simple.
+
+En conclusión podemos decir que no hay un método que sea mejor que los demás ya que depende mucho de la función de la naturaleza.Este análisis comparativo nos muestra la importancia de comprender la estructura del problema antes de elegir el método de optimización adecuado.

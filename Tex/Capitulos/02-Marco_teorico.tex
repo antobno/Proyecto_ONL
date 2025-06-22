@@ -1,0 +1,75 @@
+\chapter{Marco teórico}
+
+\section{Método de descenso con máxima pendiente}
+
+El método de descenso con máxima pendiente, también conocido como método de Cauchy o steepest descent, es un algoritmo iterativo ampliamente utilizado en optimización no lineal. Su objetivo es encontrar el mínimo local de una función diferenciable en $\mathbb{R}^n$.
+
+En cada iteración, el método de descenso requiere calcular una dirección de búsqueda $v$ y un tamaño de paso $\alpha$, actualizando el punto actual $x^{(k)}$ a un nuevo punto $x^{(k + 1)}$ mediante la fórmula
+$$x^{(k + 1)} = x^{(k)} + \alpha v.$$
+La dirección de descenso se elige como el negativo del gradiente, $-\nabla f\left(x^{(k)}\right)$, ya que esta es la dirección de máximo decremento de la función. El tamaño de paso $\alpha_k$ se determina resolviendo un problema de minimización unidimensional a lo largo de la dirección de descenso, es decir,
+$$\alpha_k = \arg \min_{\alpha \geq 0} \left\{f\left(x^{(k)} + \alpha_k v_k\right)\right\}.$$
+Este proceso se repite hasta que se alcanza un punto óptimo local.
+
+\subsection{Condiciones de Wolfe}
+
+Las Condiciones de Wolfe son un conjunto de criterios para asegurar que el tamaño de paso en cada iteración conduzca a una reducción suficiente de la función objetivo y a un progreso adecuado hacia el mínimo. Las Condiciones de Wolfe constan de dos partes:
+\begin{itemize}
+    \item Condición de Armijo: Esta condición dada por $f\left(x^{(k)} + \alpha_k v_k\right) \leq f\left(x^{(k)}\right) + c_1 \alpha_k \nabla f\left(x^{(k)}\right)^{\top} v_k$, donde $0 \leq c_1 \leq 1$, asegura que la disminución en la función objetivo sea proporcional al tamaño del paso y la derivada direccional.
+    \item Condición de curvatura: Esta condición dada por $\nabla f\left(x^{(k)} + \alpha_k v_k\right)^{\top} v_k \geq c_2 \nabla f\left(x^{(k)}\right)^{\top} v_k$, donde $c_1 \leq c_2 \leq 1$, asegura que el tamaño del paso no sea demasiado pequeño. 
+\end{itemize}
+
+\newpage
+
+\section{Método de Newton para varias variables}
+
+El método de Newton se basa en aproximar la función objetivo mediante una expansión cuadrática de Taylor alrededor del punto actual $x^{(k)}$. Esta aproximación tiene en cuenta tanto el gradiente $\nabla f\left(x^{(k)}\right)$ como la matriz Hessiana $H\left(x^{(k)}\right)$. El objetivo es minimizar la siguiente función,
+$$q(x) = f\left(x^{(k)}\right) + \left(x - x^{(k)}\right)^{\top} g^{(k)} + \frac{1}{2} \left(x - x^{(k)}\right)^{\top} H\left(x^{(k)}\right) \left(x - x^{(k)}\right)$$
+donde $g^{(k)} = \nabla f\left(x^{(k)}\right)$ y $H := \nabla^2 f\left(x^{(k)}\right)$, que es una aproximación cuadrática a la función original. El mínimo de dicha función se encuentra cuando
+$$H\left(x^{(k)}\right)^{-1} g^{(k)} + \left(x - x^{(k)}\right) = 0.$$
+De esta manera, la nueva iteración se calcula como
+$$x^{(k + 1)} = x^{(k)} - H\left(x^{(k)}\right)^{-1} g^{(k)}.$$
+Si la matriz Hessiana es definida positiva en el punto $x^{(k)}$, entonces $H\left(x^{(k)}\right)^{-1} g^{(k)}$ nos llevará a un mínimo local de la función. El método de Newton no siempre garantiza el descenso; es decir, no siempre se cumple que $f\left(x^{(k + 1)}\right) < f\left(x^{(k)}\right)$. Además, calcular la Hessiana y resolver el sistema lineal en cada iteración puede ser computacionalmente costoso, especialmente para problemas de gran escala. La Hessiana también puede ser singular, lo que impide la inversión.
+
+\subsection{Modificación Levenberg-Marquardt}
+
+Para mitigar algunos de los problemas del método de Newton, como la falta de definitud positiva de la matriz Hessiana, se introduce una modificación llamada modificación de Levenberg-Marquardt. Esta técnica ajusta la matriz Hessiana de la siguiente manera
+$$x^{(k + 1)} = x^{(k)} - \left[H\left(x^{(k)}\right) + \mu_k I\right]^{-1} g^{(k)},$$
+donde $\mu_k$ es un parámetro que se ajusta durante el proceso. Si $\mu_k$ es grande, el comportamiento del método se asemeja al del método de máxima pendiente con un paso pequeño, mientras que si $\mu_k$ es pequeño, el algoritmo se aproxima al método de Newton.
+
+\section{Método de Cuasi-Newton}
+
+El Método Cuasi-Newton es una modificación del método de Newton que busca aproximar la inversa de la matriz Hessiana de la función objetivo de forma iterativa. Esto se hace para reducir el costo computacional de calcular la Hessiana en cada iteración, como lo requiere el método de Newton, y para evitar problemas cuando la Hessiana es singular o no definida positiva. En cada iteración, se añade una matriz de corrección $U_k$ a la matriz $H_k$ para obtener la siguiente aproximación:
+$$H_{k+1} = H_k + U_k.$$
+\newpage\noindent
+Esta actualización se realiza para incorporar información sobre la curvatura de la función objetivo, basándose en los cambios observados en los gradientes. La condición de Cuasi-Newton, derivada de la expansión de Taylor de segundo orden, establece que
+$$g_{k+1} - g_k \approx H(x_k) d_k$$
+donde $g_{k + 1} := \nabla f(x_k + d_k)$ y $d_k = x_{k+1} - x_k$ es el paso dado en la iteración.
+
+\subsection{Rango uno}
+
+El método de rango uno es un método Cuasi-Newton específico que calcula la actualización de la inversa de la Hessiana mediante la siguiente fórmula:
+$$H_{k+1} = H_k + \frac{\left(\Delta x^{(k)} - H_k \Delta g^{(k)}\right) \left(\Delta x^{(k)} - H_k \Delta g^{(k)}\right)^{\top}}{\Delta\left. g^{(k)} \right.^{\top} \left(\Delta x^{(k)} - H_k \Delta g^{(k)}\right)}$$
+para obtener $d^{(k)} = -H_k g^{(k)}$ donde
+$$x^{(k+1)} = x^{(k)} + \alpha_k d^{(k)}$$
+y $\alpha_k$ es el tamaño de paso.
+
+\subsection{Rango dos}
+El método de rango dos (DFP) es un método Cuasi-Newton que actualiza la aproximación de la inversa de la Hessiana garantizando que si $H_k$ es definida positiva, entonces $H_{k+1}$ también lo será. La fórmula de actualización es:
+
+\[
+H_{k+1} = H_k + \frac{\Delta x^{(k)}\Delta x^{(k)\top}}{\Delta x^{(k)\top}\Delta g^{(k)}} - \frac{H_k \Delta g^{(k)} \Delta g^{(k)\top} H_k}{\Delta g^{(k)\top} H_k \Delta g^{(k)}}
+\]
+
+donde: $\Delta x^{(k)} = x^{(k+1)} - x^{(k)}$ (cambio en el punto), $\Delta g^{(k)} = \nabla f(x^{(k+1)}) - \nabla f(x^{(k)})$ (cambio en el gradiente),$H_k$ es la aproximación actual de la inversa de la Hessiana.
+
+\section{Método de gradientes conjugados}
+
+El método de Gradientes Conjugados es un algoritmo iterativo para resolver sistemas de ecuaciones lineales y optimización no lineal. Es particularmente eficiente para minimizar funciones cuadráticas y puede extenderse a funciones no cuadráticas. 
+
+\subsection[Fórmulas para \texorpdfstring{$\beta_k$}{bk}]{Fórmulas para \texorpdfstring{\boldmath$\beta_k$}{bk}}
+
+\begin{itemize}
+    \item Hestenes-Stiefel: $\beta_k^{HS} = \dfrac{\nabla f(x^{k+1})^T (\nabla f(x^{k+1}) - \nabla f(x^k))}{d^{kT}(\nabla f(x^{k+1}) - \nabla f(x^k))}$.
+    \item Polak-Ribière: $\beta_k^{PR} = \dfrac{\nabla f(x^{k+1})^T (\nabla f(x^{k+1}) - \nabla f(x^k))}{\nabla f(x^k)^T \nabla f(x^k)}$.
+    \item Fletcher-Reeves: $\beta_k^{FR} = \dfrac{\nabla f(x^{k+1})^T \nabla f(x^{k+1})}{\nabla f(x^k)^T \nabla f(x^k)}$.
+\end{itemize}

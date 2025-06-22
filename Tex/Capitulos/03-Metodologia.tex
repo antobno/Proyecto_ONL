@@ -1,0 +1,546 @@
+\chapter{Metodología}
+
+La metodología de este proyecto se centra en la evaluación de diferentes métodos de optimización no lineal sin restricciones. Para ello, se busca el punto óptimo de diversas funciones objetivo utilizando cinco métodos distintos: Descenso con Máxima Pendiente, Método de Newton, Método Cuasi-Newton, Gradientes Conjugados y el algoritmo de Hooke-Jeeves.
+
+Para garantizar la robustez y fiabilidad de los resultados, se implementará la técnica de \emph{multistart}. En lugar de evaluar cada método desde un único punto inicial, se generan $N$\footnote{Como en nuestras anteriores tareas, asignaremos 2500 al valor de $N$.} puntos iniciales aleatorios uniformemente distribuidos dentro del dominio definido para cada función. Esto permite mitigar el riesgo de obtener resultados sesgados por la elección de un único punto de partida, que podría tener ventajas específicas o conducir a óptimos locales. Para asegurar la reproducibilidad de los experimentos, se controla el generador de números aleatorios estableciendo una semilla fija en el código, de modo que cada conjunto de puntos iniciales se utilice de manera consistente para cada método y función.
+
+Una vez generados los $N$ puntos iniciales, cada uno de los cinco métodos de optimización se ejecuta para cada punto. De cada ejecución, se recopilan los siguientes resultados:
+\begin{itemize}
+    \item Número de iteraciones: Este indicador refleja el costo computacional del método en términos de evaluaciones de la función objetivo.
+    \item Punto óptimo encontrado: Este valor es crucial para verificar la correcta convergencia del método y para identificar si algún punto inicial no converge a la solución esperada.
+    \item Función evaluada en el punto óptimo: Este valor es el resultado de sustituir el punto óptimo encontrado en la función objetivo, lo que indica el valor mínimo (o máximo) alcanzado por la función.
+    \item Error: Este parámetro mide la norma de la diferencia entre el punto óptimo encontrado por el método y el verdadero punto óptimo de la función, lo que permite evaluar la precisión del algoritmo.
+\end{itemize}
+Finalmente, se realizará un análisis comparativo de los resultados obtenidos para cada método. Este análisis permitirá evaluar la efectividad, eficiencia y fiabilidad de cada algoritmo en la resolución de problemas de optimización.
+
+\newpage
+
+\section{Programas de \textsc{Matlab}}
+
+\subsection{Algoritmo de Máxima Pendiente}
+\begin{matlab}
+    unction [best_x, best_val, tiempo_ejecucion, num_evaluaciones, x_inicios, resultados] = multistart_maxima_pen_interv(f, grad_f, num_inicios, lb, ub)
+    % Multistart con descenso por máxima pendiente y registro de puntos iniciales
+    % Con error y número de iteraciones
+    % lb: límite inferior 
+    % ub: límite superior 
+    
+    tic; 
+    num_evaluaciones = 0;
+    best_val = Inf;
+    best_x = [];
+    x_inicios = zeros(2, num_inicios); 
+    resultados = struct('x0', {}, 'x_opt', {}, 'f_val', {}, 'evals', {}, 'iterations', {}, 'error', {});
+
+    rng(42); % Fija semilla aleatoria para reproducibilidad
+
+    for i = 1:num_inicios
+     
+        x0 = lb + (ub - lb) .* rand(2,1);
+        x_inicios(:, i) = x0;
+
+        % Optimización desde x0
+        [x_opt, evals, iterations, err] = maxima_pen_interv(f, grad_f, x0);
+        val = f(x_opt);
+        num_evaluaciones = num_evaluaciones + evals + 1; % +1 por evaluación final
+
+        % Guarda resultados individuales
+        resultados(i).x0 = x0;
+        resultados(i).x_opt = x_opt;
+        resultados(i).f_val = val;
+        resultados(i).evals = evals;
+        resultados(i).iterations = iterations;
+        resultados(i).error = err;
+
+        % Actualiza mejor solución global
+        if val < best_val
+            best_val = val;
+            best_x = x_opt;
+        end
+    end
+    tiempo_ejecucion = toc; 
+end
+
+% -----------------------------------------------------------------------
+function [x_opt, num_evaluaciones, iterations, error] = maxima_pen_interv(f, grad_f, x0)
+    % Descenso por gradiente con búsqueda lineal exacta
+    % Número de iteraciones y error final
+    
+    tol = 1e-6;
+    max_iter = 1000;
+    iterations = 0;
+    xk = x0(:);
+    num_evaluaciones = 0;
+    error = Inf;
+
+    while norm(grad_f(xk)) > tol && iterations < max_iter
+        vk = -grad_f(xk); % Dirección de descenso
+        % Búsqueda lineal (fminbnd usa ~30 evaluaciones internas)
+        alpha_k = fminbnd(@(alpha) f(xk + alpha * vk), 0, 1);
+        xk = xk + alpha_k * vk;
+        iterations = iterations + 1;
+        num_evaluaciones = num_evaluaciones + 30; % Estimación conservadora
+        error = norm(grad_f(xk));
+    end
+    x_opt = xk;
+end
+
+% -------------------------------------------------------------------------
+% Función 
+f1 = @(x) x(1)^2 + 2*x(2)^2 - 0.3*cos(3*pi*x(1)) - 0.4*cos(4*pi*x(2)) + 0.7;
+% Gradiente numérico 
+grad_f1 = @(x) [
+    (f1(x + [1e-6; 0]) - f1(x - [1e-6; 0])) / (2e-6);
+    (f1(x + [0; 1e-6]) - f1(x - [0; 1e-6])) / (2e-6)
+];
+
+% -------------------------------------------------------------------------
+
+num_reinicios = 30;
+lb = [-100; -100]; % Límites inferiores 
+ub = [100; 100];   % Límites superiores 
+[best_x, best_val, tiempo, evals, x_inicios, resultados] = multistart_maxima_pen_interv(f1, grad_f1, num_reinicios, lb, ub);
+
+% Mostrar resultados en consola
+disp('=== RESULTADOS ===');
+disp(['Mejor mínimo encontrado: [', num2str(best_x'), ']']);
+disp(['Valor de la función: ', num2str(best_val)]);
+disp(['Tiempo total: ', num2str(tiempo), ' segundos']);
+disp(['Evaluaciones de f(x): ', num2str(evals)]);
+
+% Mostrar estadísticas de iteraciones y errores
+iterations_array = [resultados.iterations];
+error_array = [resultados.error];
+disp(['Iteraciones promedio por ejecución: ', num2str(mean(iterations_array))]);
+disp(['Error promedio final: ', num2str(mean(error_array))]);
+disp(['Máximo error final: ', num2str(max(error_array))]);
+\end{matlab}
+\subsection{Algoritmo del Método de Newton}
+\begin{matlab}
+    function newton_multivariable_multistart_2500_symbolic()
+    % Limpiar entorno
+    clear; clc;
+
+    % Definir variables simbólicas
+    syms x1 x2
+    vars = [x1; x2];
+
+    % Definir la función simbólica (Goldstein-Price simplificada)
+ f_expr = (1.5 - x1 + x1*x2)^2 + (2.25 - x1 + x1*x2^2)^2 + (2.625 - x1 + x1*x2^3)^2;
+    % Calcular gradiddente y Hessiana simbólicas
+    grad_f_sym = gradient(f_expr, vars);
+    H_f_sym = hessian(f_expr, vars);
+
+    % Convertir a funciones numéricas
+    f = matlabFunction(f_expr, 'Vars', {vars});
+    grad_f = matlabFunction(grad_f_sym, 'Vars', {vars});
+    H_f = matlabFunction(H_f_sym, 'Vars', {vars});
+
+    % Parámetros
+    max_iter = 100;
+    tol = 1e-6;
+    num_starts = 2500;
+    rango = [-5, 5];
+
+    % Inicialización del mejor resultado
+    mejor_valor = inf;
+    mejor_resultado = struct();
+
+    for intento = 1:num_starts
+        x0 = rango(1) + (rango(2) - rango(1)) * rand(2,1);
+        x = x0;
+        x_prev = inf(size(x0));
+        iter = 0;
+        converged = false;
+        llamadas_funcion = 0;
+
+        while iter < max_iter && ~converged
+            g = grad_f(x); g = g(:);  % vector columna
+            H_current = H_f(x);
+
+            if iter > 0
+                error = norm(x - x_prev);
+            else
+                error = inf;
+            end
+
+            if iter > 0 && error < tol
+                converged = true;
+                break;
+            end
+
+            % Comprobar condición numérica Hessiana
+            if rcond(H_current) < 1e-12
+                break;
+            end
+
+            x_prev = x;
+            d = -H_current \ g;
+            x = x + d;
+
+            iter = iter + 1;
+            llamadas_funcion = llamadas_funcion + 1;
+        end
+
+        valor_final = f(x);
+        llamadas_funcion = llamadas_funcion + 1;
+        grad_final = grad_f(x); grad_final = grad_final(:);
+
+        if valor_final < mejor_valor
+            mejor_valor = valor_final;
+            mejor_resultado.x0 = x0;
+            mejor_resultado.x_opt = x;
+            mejor_resultado.valor_funcion = valor_final;
+            mejor_resultado.gradiente = grad_final;
+            mejor_resultado.error = norm(x - x_prev);
+            mejor_resultado.iteraciones = iter;
+            mejor_resultado.llamadas_funcion = llamadas_funcion;
+        end
+    end
+
+    % Mostrar solo el mejor resultado
+    fprintf('Mejor resultado encontrado (entre %d puntos):\n', num_starts);
+    fprintf('Punto inicial:      [%.6f, %.6f]\n', mejor_resultado.x0(1), mejor_resultado.x0(2));
+    fprintf('Punto óptimo:       [%.6f, %.6f]\n', mejor_resultado.x_opt(1), mejor_resultado.x_opt(2));
+    fprintf('Valor función:      %.6f\n', mejor_resultado.valor_funcion);
+    fprintf('Gradiente óptimo:   [%.6f, %.6f]\n', mejor_resultado.gradiente(1), mejor_resultado.gradiente(2));
+    fprintf('Error final:        %.6f\n', mejor_resultado.error);
+    fprintf('Iteraciones:        %d\n', mejor_resultado.iteraciones);
+    fprintf('Llamadas función:   %d\n', mejor_resultado.llamadas_funcion);
+end
+\end{matlab}
+\subsection{Algoritmo de Cuasi-Newton Rango 1}
+
+\begin{matlab}
+% Parámetros comunes
+a = -10; b = 10;            % Límites del dominio
+n_points = 2500;            % Número de puntos iniciales
+dim = 2;                    % Dimensión del problema
+true_opt = [1, 3];          % Óptimo verdadero
+max_iter = 1000;            % Máximo de iteraciones por ejecución
+tol = 1e-6;                 % Tolerancia de convergencia
+
+% Generar 2500 puntos iniciales uniformemente distribuidos
+rng(1); % Fijar semilla para reproducibilidad
+initial_points = a + (b-a)*rand(n_points, dim);
+
+% Definir la función objetivo
+objective_func = @(x) (x(1) + 2*x(2) - 7)^2 + (2*x(1) + x(2) - 5)^2; % Función de la sección 4.2
+
+% Llamar al optimizador
+[opt_x, fval, best_iter, err] = quasi_newton_rango1_ms(...
+    objective_func, initial_points, a, b, true_opt, max_iter, tol);
+
+% Mostrar resultados
+fprintf('Cuasi-Newton Rango 1:\n');
+fprintf('  Punto óptimo: [%.6f, %.6f]\n', opt_x(1), opt_x(2));
+fprintf('  Valor función: %.6f\n', fval);
+fprintf('  Iteraciones: %d\n', best_iter);
+fprintf('  Error: %.6f\n', err);
+
+% FUNCIÓN PRINCIPAL: Cuasi-Newton Rango 1 con MultiStart
+function [best_x, best_fval, best_iter, best_err] = quasi_newton_rango1_ms(...
+    f, initial_points, a, b, true_opt, max_iter, tol)
+    
+    n_points = size(initial_points, 1);
+    dim = size(initial_points, 2);
+    
+    best_fval = inf;
+    best_x = [];
+    best_iter = 0;  % Almacena iteraciones de la mejor ejecución
+    
+    for i = 1:n_points
+        x0 = initial_points(i,:);
+        [x_opt, fval, iter, success] = quasi_newton_rango1(...
+            f, x0, dim, a, b, max_iter, tol);
+        
+        % Guardar iteraciones SOLO si es la mejor ejecución
+        if success && fval < best_fval
+            best_fval = fval;
+            best_x = x_opt;
+            best_iter = iter;  % Guarda iteraciones de esta ejecución
+        end
+    end
+    
+    best_err = norm(best_x - true_opt);
+end
+
+% ALGORITMO DE CUASI-NEWTON RANGO 1
+function [x_opt, fval, iter, success] = quasi_newton_rango1(...
+    f, x0, dim, a, b, max_iter, tol)
+    
+    % Inicialización
+    x = x0(:); % Convertir a vector columna
+    H = eye(dim); % Matriz inicial identidad
+    iter = 0;
+    success = false;
+    n_restart = 0; % Contador para reinicio
+    
+    % Almacenar puntos para evitar ciclos infinitos
+    x_history = zeros(dim, max_iter+1);
+    x_history(:,1) = x;
+    
+    while iter < max_iter
+        iter = iter + 1;
+        
+        % Calcular gradiente con diferencias finitas
+        g = gradiente(f, x);
+        
+        % Verificar convergencia
+        if norm(g) < tol
+            success = true;
+            break;
+        end
+        
+        % Reiniciar cada n iteraciones (n = dimensión)
+        if n_restart >= dim
+            d = -g; % Dirección de descenso más pronunciado
+            H = eye(dim); % Reiniciar matriz H
+            n_restart = 0; % Reiniciar contador
+        else
+            % Calcular dirección de búsqueda
+            d = -H * g;
+            n_restart = n_restart + 1;
+        end
+        
+        % Verificar dirección de descenso
+        if g' * d >= 0
+            d = -g; % Usar descenso más pronunciado
+            H = eye(dim); % Reiniciar matriz H
+            n_restart = 0;
+        end
+        
+        % Búsqueda lineal exacta (sección dorada)
+        alpha = golden_section_search(f, x, d, a, b, 100);
+        
+        % Actualizar punto
+        x_new = x + alpha * d;
+        
+        % Asegurar que está dentro de los límites
+        x_new = max(min(x_new, b), a);
+        
+        % Calcular nuevo gradiente
+        g_new = gradiente(f, x_new);
+        
+        % Calcular diferencias
+        delta_x = x_new - x;
+        delta_g = g_new - g;
+        
+        % Verificar condición de actualización
+        denom = delta_g' * (delta_x - H * delta_g);
+        
+        % Actualizar matriz H si se cumple la condición
+        if abs(denom) > 1e-10
+            u = delta_x - H * delta_g;
+            H = H + (u * u') / denom;
+        end
+        
+        % Verificar si la matriz H es definida positiva
+        if ~isdefinite(H)
+            % Si no es DP, usar descenso más pronunciado en la próxima iteración
+            n_restart = dim; % Forzar reinicio
+        end
+        
+        % Actualizar para siguiente iteración
+        x = x_new;
+        x_history(:,iter+1) = x;
+        
+        % Verificar convergencia en posición
+        if norm(delta_x) < tol
+            success = true;
+            break;
+        end
+        
+        % Detectar estancamiento
+        if iter > 10 && norm(x - x_history(:,iter-5)) < tol
+            success = true;
+            break;
+        end
+    end
+    
+    x_opt = x';
+    fval = f(x_opt);
+end
+
+
+% FUNCIÓN PARA CALCULAR EL GRADIENTE (DIFERENCIAS FINITAS)
+function g = gradiente(f, x)
+    h = 1e-8; % Tamaño del paso
+    n = length(x);
+    g = zeros(n, 1);
+    
+    for i = 1:n
+        e_i = zeros(n, 1);
+        e_i(i) = 1;
+        
+        f_forward = f(x + h*e_i);
+        f_backward = f(x - h*e_i);
+        
+        g(i) = (f_forward - f_backward) / (2*h);
+    end
+end
+
+% BÚSQUEDA LINEAL CON MÉTODO DE LA SECCIÓN DORADA
+function alpha = golden_section_search(f, x, d, a, b, max_iter)
+    % Parámetros de la sección dorada
+    golden_ratio = (sqrt(5)-1)/2;
+    tol = 1e-6;
+    
+    % Establecer intervalo inicial
+    low = 0;
+    high = 1;
+    
+    % Expandir intervalo si es necesario
+    while f(x + high*d) < f(x + low*d)
+        high = 2*high;
+    end
+    
+    % Puntos iniciales
+    x1 = high - golden_ratio*(high - low);
+    x2 = low + golden_ratio*(high - low);
+    
+    f1 = f(x + x1*d);
+    f2 = f(x + x2*d);
+    
+    % Iteraciones de la sección dorada
+    for i = 1:max_iter
+        if (high - low) < tol
+            break;
+        end
+        
+        if f1 < f2
+            high = x2;
+            x2 = x1;
+            f2 = f1;
+            x1 = high - golden_ratio*(high - low);
+            f1 = f(x + x1*d);
+        else
+            low = x1;
+            x1 = x2;
+            f1 = f2;
+            x2 = low + golden_ratio*(high - low);
+            f2 = f(x + x2*d);
+        end
+    end
+    
+    alpha = (low + high)/2;
+end
+
+% VERIFICAR SI UNA MATRIZ ES DEFINIDA POSITIVA
+function result = isdefinite(A)
+    % Se intenta realizar la descomposición de Cholesky
+    [~, p] = chol(A);
+    result = (p == 0);
+end
+\end{matlab}
+
+\subsection{Algoritmo del Método de Gradientes Conjugados}
+\begin{matlab}
+clc; clear;
+
+fprintf('=== MultiInicio manual con gradientes conjugados ===\n');
+
+% Variables simbólicas para la función y el gradiente
+syms x y
+
+%===============FUNCIONES A EVALUAR=================
+% 1) 17. Función Bohachevsky: x(1)^2 + 2*x(2)^2 - 0.3*cos(3*pi*x(1)) - 0.4*cos(4*pi*x(2)) + 0.7;
+% 2) 24. Función Booth: (x(1) + 2*x(2) - 7)^2 + (2*x(1) + x(2) - 5)^2;
+% 3) 40. Goldstein-Price: (1 + (x(1) + x(2) + 1)^2 * (19 - 14*x(1) + 3*x(1)^2 - 14*x(2) + 6*x(1)*x(2) + 3*x(2)^2)) * ...
+%     (30 + (2*x(1) - 3*x(2))^2 * (18 - 32*x(1) + 12*x(1)^2 + 48*x(2) - 36*x(1)*x(2) + 27*x(2)^2));
+% 4) 25. Función Matyas: 0.26*(x(1)^2 + x(2)^2) - 0.48*x(1)*x(2);
+% 5) 29. Función Three Hump Camel: 2*x(1)^2 - 1.05*x(1)^4 + (x(1)^6)/6 + x(1)*x(2) + x(2)^2;
+% 6) 34. Función Eason: -cos(x(1))*cos(x(2))*exp(-(x(1)-pi)^2 - (x(2)-pi)^2);
+% 7) 36. Función Beale:  @(x) (1.5 - x(1) + x(1)*x(2))^2 + (2.25 - x(1) + x(1)*x(2)^2)^2 + (2.625 - x(1) + x(1)*x(2)^3)^2;
+
+
+funcion = @(x) x(1)^2 + 2*x(2)^2 - 0.3*cos(3*pi*x(1)) - 0.4*cos(4*pi*x(2)) + 0.7;
+gradiente = @(x) [
+    2*x(1) + 0.9*pi*sin(3*pi*x(1));
+    4*x(2) + 1.6*pi*sin(4*pi*x(2))
+];
+
+% Parámetros de MultiInicio
+num_intentos = 2500;
+lim_inf = [-100; -100];
+lim_sup = [100; 100];
+
+% Inicializar valores
+% Inicializar valores
+mejor_error = inf;  % Ahora el criterio será el error
+
+for i = 1:num_intentos
+    x_inicial = lim_inf + (lim_sup - lim_inf) .* rand(2,1);
+
+    % Llamar al método del gradiente conjugado
+    [x_optimo, gradiente_optimo, valor_funcion, iteraciones, llamadas_f] = gradiente_conjugado(x_inicial, funcion, gradiente);
+
+    % Calcular el error actual
+    error_actual = norm(x_optimo - x_inicial);
+
+    % Comparar con el mejor error hasta ahora
+    if error_actual < mejor_error
+        mejor_error = error_actual;
+        mejor_valor = valor_funcion;
+        mejor_x0 = x_inicial;
+        mejor_xopt = x_optimo;
+        mejor_grad = gradiente_optimo;
+        mejor_iters = iteraciones;
+        mejor_llamadas = llamadas_f;
+    end
+end
+
+
+
+% Mostrar solo la mejor ejecución
+fprintf('\n=== Mejor ejecución de %d intentos ===\n', num_intentos);
+fprintf('Punto inicial: (%.6f, %.6f)\n', mejor_x0(1), mejor_x0(2));
+fprintf('Punto óptimo:  (%.6f, %.6f)\n', mejor_xopt(1), mejor_xopt(2));
+fprintf('Valor de la función: %.10f\n', mejor_valor);
+fprintf('Gradiente en óptimo: (%.10f, %.10f)\n', mejor_grad(1), mejor_grad(2));
+fprintf('Error ||x_opt - x0||: %.10f\n', mejor_error);
+fprintf('Iteraciones:   %d\n', mejor_iters);
+fprintf('Llamadas a f:  %d\n', mejor_llamadas);
+
+%% Función: gradiente conjugado
+function [x_optimo, gradiente_optimo, valor_funcion, iteraciones, llamadas_f] = gradiente_conjugado(x0, funcion, gradiente)
+    x_k = x0(:);
+    g_k = gradiente(x_k);
+    d_k = -g_k;
+    tolerancia = 1e-9;
+    iter_max = 3000;
+    iteraciones = 0;
+    llamadas_f = 0;
+
+    while iteraciones < iter_max
+        phi = @(alfa) funcion(x_k + alfa*d_k);
+        alfa_k = fminbnd(phi, 0, 1);
+        llamadas_f = llamadas_f + 1;
+
+        x_k1 = x_k + alfa_k*d_k;
+        g_k1 = gradiente(x_k1);
+        llamadas_f = llamadas_f + 1;
+
+        if norm(g_k1) < tolerancia
+            break;
+        end
+
+        if mod(iteraciones, length(x_k)) == 0
+            d_k1 = -g_k1;
+        else
+            beta_k = (g_k1'*g_k1) / (g_k'*g_k);
+            d_k1 = -g_k1 + beta_k * d_k;
+        end
+
+        x_k = x_k1;
+        g_k = g_k1;
+        d_k = d_k1;
+        iteraciones = iteraciones + 1;
+    end
+
+    x_optimo = x_k1;
+    gradiente_optimo = g_k1;
+    valor_funcion = funcion(x_optimo);
+    llamadas_f = llamadas_f + 1;
+end
+\end{matlab}

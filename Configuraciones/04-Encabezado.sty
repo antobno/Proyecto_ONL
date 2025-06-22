@@ -1,0 +1,21 @@
+%%% Encabezado y pie de página %%%  
+\usepackage{fancyhdr}  % Para encabezados y pies de página personalizados.  
+\usepackage[bottom,hang]{footmisc}  % Alinear las notas al pie hacia el fondo.  
+\pagestyle{fancy} \fancyhf{}  % Limpiar el estilo predeterminado de encabezado y pie de página.  
+\renewcommand{\headrulewidth}{0pt}  % Establecer una línea delgada para la regla del encabezado.  
+\setlength{\footnotemargin}{6pt}  % Establecer el espacio de margen para las notas al pie.  
+
+\renewcommand{\chaptermark}[1]{\markboth{\Lato\textbf{\color{cw0}\chaptertitlename~\thechapter} ~#1}{}}  
+\renewcommand{\sectionmark}[1]{\markright{\Lato\textbf{\color{cw0}Sección~\thesection} ~#1}}
+
+% Nombre dinámico de la sección o capítulo en el encabezado.  
+\fancyhead[OLH]{\ifnum\value{section}=0\leftmark\else\rightmark\fi\vspace{3pt}}  
+\fancyhead[ERH]{\leftmark\vspace{3pt}}  
+\fancyhead[ORH,ELH]{\Lato\thepage\vspace{3pt}}  
+
+% Estilo para páginas planas (por ejemplo, páginas de inicio de capítulos).  
+\fancypagestyle{plain}{%  
+    \fancyhf{}  % Limpiar encabezado y pie de página.  
+    \renewcommand{\headrulewidth}{0pt}  % Eliminar la regla del encabezado.  
+    \fancyfoot[ORF,ELF]{\Lato\thepage\vspace{3pt}}  % Colocar el número de página en la parte inferior.
+}  
