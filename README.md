@@ -1,4 +1,4 @@
-# Proyecto Final de Optimización No Lineal
+## Proyecto Final de Optimización No Lineal
 
 **Autores:**  
 - Marco Antonio Molina Mendoza  
@@ -19,8 +19,8 @@
 Este documento presenta un estudio comparativo de cinco métodos de optimización sin restricciones:
 
 1. Descenso por Máxima Pendiente (Cauchy)  
-2. Método de Newton
-3. Métodos Cuasi-Newton (rangos uno)  
+2. Método de Newton  
+3. Métodos Cuasi-Newton (rango uno)  
 4. Gradientes Conjugados  
 5. Algoritmo de Hooke–Jeeves (Apéndice A)  
 
